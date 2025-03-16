@@ -1,34 +1,43 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { pdf } from "@react-pdf/renderer";
-import MyDocument from "./MyDocument"; // Import your PDF document component
+import { useDropzone } from "react-dropzone";
+import MyDocument from "./MyDocument";
 
 const calculateMonthlyTax = (monthlySalary) => {
   const salary = Number(monthlySalary) || 0;
-  if (salary <= 50000) return 0;
-  if (salary <= 100000) return Math.round((salary - 50000) * 0.05);
-  if (salary <= 183333) return Math.round(2500 + (salary - 100000) * 0.15);
-  if (salary <= 266667) return Math.round(15000 + (salary - 183333) * 0.25);
-  if (salary <= 341667) return Math.round(35833 + (salary - 266667) * 0.3);
-  return Math.round(62500 + (salary - 341667) * 0.35);
+  if (salary < 50000) return 0;
+
+  let annualSalary = salary * 12;
+  let tax = 0;
+  if (annualSalary >= 600000 && annualSalary < 1200000) {
+    tax = (annualSalary - 600000) * 0.05;
+  } else if (annualSalary >= 1200000 && annualSalary < 1800000) {
+    tax = (annualSalary - 1200000) * 0.1 + 30000;
+  } else if (annualSalary >= 1800000 && annualSalary < 2500000) {
+    tax = (annualSalary - 1800000) * 0.15 + 90000;
+  } else if (annualSalary >= 2500000 && annualSalary < 3500000) {
+    tax = (annualSalary - 2200000) * 0.175 + 195000;
+  } else if (annualSalary >= 3500000 && annualSalary < 5000000) {
+    tax = (annualSalary - 3500000) * 0.2 + 370000;
+  }
+  return Math.round(tax / 12);
 };
 
 const formatDate = (dateValue) => {
-  if (!dateValue) return "Invalid Date"; // Handle missing values
+  if (!dateValue) return "Invalid Date";
 
   let date;
-
-  // Check if the date is a number (Excel stores dates as serial numbers)
   if (!isNaN(dateValue) && Number(dateValue) > 10000) {
-    date = new Date((Number(dateValue) - 25569) * 86400000); // Convert Excel serial date to JS date
+    date = new Date((Number(dateValue) - 25569) * 86400000);
   } else {
     date = new Date(dateValue);
   }
 
-  if (isNaN(date.getTime())) return "Invalid Date"; // Final fallback
+  if (isNaN(date.getTime())) return "Invalid Date";
 
   const day = date.getDate();
   const month = date.toLocaleString("default", { month: "long" });
@@ -53,11 +62,16 @@ const formatDate = (dateValue) => {
 
 const BulkPayslipUploader = () => {
   const [employees, setEmployees] = useState([]);
+  const [fileName, setFileName] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(null);
 
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
+  const onDrop = useCallback((acceptedFiles) => {
+    const file = acceptedFiles[0];
     if (!file) return;
+
+    setFileName(file.name);
+    setProgress(null);
 
     const reader = new FileReader();
     reader.onload = ({ target }) => {
@@ -80,7 +94,12 @@ const BulkPayslipUploader = () => {
     } else {
       reader.readAsBinaryString(file);
     }
-  };
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: ".csv, .xlsx",
+  });
 
   const generatePayslips = async () => {
     if (employees.length === 0) {
@@ -89,36 +108,27 @@ const BulkPayslipUploader = () => {
     }
 
     setLoading(true);
+    setProgress(`Preparing ${employees.length} payslips...`);
     const zip = new JSZip();
 
-    for (const employee of employees) {
-      console.log("Raw Employee Data:", employee); // 🟢 Debug log
-
+    for (let i = 0; i < employees.length; i++) {
+      const employee = employees[i];
       const name = employee.name || "Unknown";
       const id = employee.id || "N/A";
       const salary = Math.round(parseFloat(employee.salary) || 0);
-
+      const adjustments = Math.round(parseFloat(employee.adjustments) || 0);
       let additionalHours =
-        employee.addHours || employee.additionalHours || "0"; // Ensure correct key
-      additionalHours = additionalHours.toString().trim(); // Remove any hidden spaces
-      additionalHours = parseFloat(additionalHours); // Convert to number
-      if (isNaN(additionalHours)) additionalHours = 0; // Ensure no NaN
-
-      console.log(`Parsed Additional Hours for ${name}:`, additionalHours); // 🟢 Debug log
+        employee.addHours || employee.additionalHours || "0";
+      additionalHours = parseFloat(additionalHours.toString().trim()) || 0;
 
       const rawPaidOn = employee.paidOn;
       const formattedDate = formatDate(rawPaidOn);
       const payMonth = formattedDate.split(" ")[1] || "N/A";
 
       const tax = calculateMonthlyTax(salary);
-
-      // ✅ Fix: Ensure correct extras calculation
       const extras =
         additionalHours > 0 ? Math.round((salary / 160) * additionalHours) : 0;
-
-      console.log(`Calculated Extras for ${name}:`, extras); // 🟢 Debug log
-
-      const netpay = salary + extras - tax;
+      const netpay = salary + extras + adjustments - tax;
 
       const payslip = (
         <MyDocument
@@ -130,34 +140,57 @@ const BulkPayslipUploader = () => {
           payMonth={payMonth}
           tax={tax}
           netpay={netpay}
+          adjustments={adjustments}
         />
       );
 
       const blob = await pdf(payslip).toBlob();
       zip.file(`Payslip_${name.replace(/\s+/g, "_")}.pdf`, blob);
+
+      setProgress(`Generating payslip ${i + 1} of ${employees.length}...`);
     }
 
     zip.generateAsync({ type: "blob" }).then((zipBlob) => {
       saveAs(zipBlob, "Payslips.zip");
       setLoading(false);
+      setProgress("Download complete!");
     });
   };
 
   return (
-    <div className="max-w-md mx-auto p-4 border rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold mb-4">Bulk Payslip Generator</h2>
-      <input
-        type="file"
-        accept=".csv, .xlsx"
-        onChange={handleFileUpload}
-        className="w-full border p-2 mb-2"
-      />
+    <div className="max-w-lg mx-auto p-6 border rounded-lg shadow-md bg-white">
+      <h2 className="text-2xl font-semibold mb-4 text-center">
+        Employees Payslips
+      </h2>
+
+      <div
+        {...getRootProps()}
+        className="border-2 border-dashed border-gray-300 p-6 text-center rounded-lg cursor-pointer hover:border-blue-500 transition"
+      >
+        <input {...getInputProps()} />
+        {fileName ? (
+          <p className="text-gray-700">📂 {fileName} uploaded successfully</p>
+        ) : isDragActive ? (
+          <p className="text-gray-600">Drop the file here...</p>
+        ) : (
+          <p className="text-gray-500">
+            Drag & drop a file here, or click to select a file
+          </p>
+        )}
+      </div>
+
+      {progress && <p className="text-blue-500 mt-2 text-center">{progress}</p>}
+
       <button
         onClick={generatePayslips}
-        className="w-full bg-blue-500 text-white p-2 rounded mt-2 hover:bg-blue-600 transition"
+        className={`w-full p-3 rounded-lg mt-4 transition ${
+          loading
+            ? "bg-gray-400 cursor-not-allowed"
+            : "bg-blue-500 hover:bg-blue-600 text-blue-400"
+        }`}
         disabled={loading}
       >
-        {loading ? "Generating PDFs..." : "Download Payslips"}
+        {loading ? "Generating Payslips..." : "Download Payslips"}
       </button>
     </div>
   );

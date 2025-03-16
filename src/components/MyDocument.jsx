@@ -8,7 +8,7 @@ import {
   Image,
 } from "@react-pdf/renderer";
 import Logo from "../assets/cIRCULAR.png";
-
+import moment from "moment";
 const styles = StyleSheet.create({
   page: {
     paddingHorizontal: 40,
@@ -188,6 +188,7 @@ const MyDocument = ({
   tax,
   netpay,
   extras,
+  adjustments,
 }) => (
   <Document>
     <Page size="A4" style={styles.page}>
@@ -200,6 +201,10 @@ const MyDocument = ({
             </Text>
             <Text style={{ fontSize: "10px", color: "#737373" }}>
               371 C Faisal Town, Lahore
+            </Text>
+            <Text style={{ fontSize: 10, color: "#737373" }}>
+              <Text style={{ fontWeight: "bold" }}>NTN:</Text>
+              <Text style={{ fontStyle: "italic" }}> In-Process</Text>
             </Text>
           </View>
         </View>
@@ -239,7 +244,10 @@ const MyDocument = ({
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Pay Month</Text>
             <Text style={styles.summaryColon}>:</Text>
-            <Text style={styles.summaryValue}>{payMonth} 2025</Text>
+            <Text style={styles.summaryValue}>
+              {moment(payMonth, "MMMM").subtract(1, "month").format("MMMM")}{" "}
+              2025
+            </Text>
           </View>
 
           <View style={styles.summaryRow}>
@@ -260,7 +268,7 @@ const MyDocument = ({
             <View style={styles.rightBorder} />
             <View style={{ padding: "5px" }}>
               <Text style={{ fontSize: "20px", fontWeight: "bold" }}>
-                Rs. {netpay}
+                Rs. {Number(netpay).toLocaleString("en-PK")}
               </Text>
               <Text style={{ fontSize: "11px", color: "#dc3326" }}>
                 Total Net Pay
@@ -301,7 +309,9 @@ const MyDocument = ({
                 }}
               >
                 <Text style={{ fontSize: "10px" }}>Basic</Text>
-                <Text style={{ fontSize: "10px" }}>{salary}</Text>
+                <Text style={{ fontSize: "10px" }}>
+                  {Number(salary).toLocaleString("en-PK")}
+                </Text>
               </View>
               <View
                 style={{
@@ -311,7 +321,21 @@ const MyDocument = ({
                 }}
               >
                 <Text style={{ fontSize: "10px" }}>Extras</Text>
-                <Text style={{ fontSize: "10px" }}>{extras}</Text>
+                <Text style={{ fontSize: "10px" }}>
+                  {Number(extras).toLocaleString("en-PK")}
+                </Text>
+              </View>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  marginTop: 5,
+                }}
+              >
+                <Text style={{ fontSize: "10px" }}>Adjustments</Text>
+                <Text style={{ fontSize: "10px" }}>
+                  {Number(adjustments).toLocaleString("en-PK")}
+                </Text>
               </View>
             </View>
           </View>
@@ -336,7 +360,9 @@ const MyDocument = ({
               style={{ flexDirection: "row", justifyContent: "space-between" }}
             >
               <Text style={{ fontSize: "10px" }}>Income Tax</Text>
-              <Text style={{ fontSize: "10px" }}>{tax}</Text>
+              <Text style={{ fontSize: "10px" }}>
+                {Number(tax).toLocaleString("en-PK")}
+              </Text>
             </View>
           </View>
         </View>
@@ -362,7 +388,12 @@ const MyDocument = ({
               Gross Earnings
             </Text>
             <Text style={{ fontSize: "10px", fontWeight: "bold" }}>
-              Rs. {parseFloat(salary) + parseFloat(extras)}
+              Rs. {""}
+              {Number(
+                parseFloat(salary) +
+                  parseFloat(extras) +
+                  parseFloat(adjustments)
+              ).toLocaleString("en-PK")}
             </Text>
           </View>
           <View
@@ -378,7 +409,7 @@ const MyDocument = ({
               Total Deductions
             </Text>
             <Text style={{ fontSize: "10px", fontWeight: "bold" }}>
-              Rs. {tax}
+              Rs. {Number(parseFloat(tax)).toLocaleString("en-PK")}
             </Text>
           </View>
         </View>
@@ -403,7 +434,7 @@ const MyDocument = ({
             }}
           >
             <Text style={{ fontSize: "15px", fontWeight: "bold" }}>
-              Rs. {netpay}
+              Rs. {Number(parseFloat(netpay)).toLocaleString("en-PK")}
             </Text>
           </View>
         </View>
@@ -412,8 +443,9 @@ const MyDocument = ({
         style={{
           flexDirection: "row",
           width: "100%",
-          justifyContent: "flex-end", // Pushes content to the right
+          justifyContent: "flex-end",
           marginBottom: 10,
+          marginTop: 20,
         }}
       >
         <View style={{ flexDirection: "row" }}>
