@@ -20,7 +20,7 @@ const calculateMonthlyTax = (monthlySalary) => {
   } else if (annualSalary >= 1800000 && annualSalary < 2500000) {
     tax = (annualSalary - 1800000) * 0.15 + 90000;
   } else if (annualSalary >= 2500000 && annualSalary < 3500000) {
-    tax = (annualSalary - 2200000) * 0.175 + 195000;
+    tax = (annualSalary - 2500000) * 0.175 + 195000;
   } else if (annualSalary >= 3500000 && annualSalary < 5000000) {
     tax = (annualSalary - 3500000) * 0.2 + 370000;
   }
