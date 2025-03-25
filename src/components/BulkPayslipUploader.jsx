@@ -123,13 +123,12 @@ const BulkPayslipUploader = () => {
 
       const rawPaidOn = employee.paidOn;
       const formattedDate = formatDate(rawPaidOn);
-      const payMonth = formattedDate.split(" ")[1] || "N/A";
+      const payMonth = employee.payMonth;
 
       const tax = calculateMonthlyTax(salary);
       const extras =
         additionalHours > 0 ? Math.round((salary / 160) * additionalHours) : 0;
       const netpay = salary + extras + adjustments - tax;
-
       const payslip = (
         <MyDocument
           name={name}

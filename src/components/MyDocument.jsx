@@ -245,8 +245,7 @@ const MyDocument = ({
             <Text style={styles.summaryLabel}>Pay Month</Text>
             <Text style={styles.summaryColon}>:</Text>
             <Text style={styles.summaryValue}>
-              {moment(payMonth, "MMMM").subtract(1, "month").format("MMMM")}{" "}
-              2025
+              {moment(payMonth).format("MMMM")} 2025
             </Text>
           </View>
 
