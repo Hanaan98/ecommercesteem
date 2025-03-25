@@ -244,9 +244,7 @@ const MyDocument = ({
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Pay Month</Text>
             <Text style={styles.summaryColon}>:</Text>
-            <Text style={styles.summaryValue}>
-              {moment(payMonth).format("MMMM")} 2025
-            </Text>
+            <Text style={styles.summaryValue}>{payMonth} 2025</Text>
           </View>
 
           <View style={styles.summaryRow}>
