@@ -129,6 +129,7 @@ const BulkPayslipUploader = () => {
       const extras =
         additionalHours > 0 ? Math.round((salary / 160) * additionalHours) : 0;
       const netpay = salary + extras + adjustments - tax;
+      const email = employee.email;
       const payslip = (
         <MyDocument
           name={name}
@@ -144,6 +145,19 @@ const BulkPayslipUploader = () => {
       );
 
       const blob = await pdf(payslip).toBlob();
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("email", email); // email must exist in CSV
+      formData.append("payslip", blob, `Payslip-${name}.pdf`);
+
+      try {
+      await fetch("http://localhost:5000/send-email", {
+      method: "POST",
+      body: formData,
+    });
+    } catch (err) {
+    console.error("Failed to send email to", name);
+  }
       zip.file(`Payslip_${name.replace(/\s+/g, "_")}.pdf`, blob);
 
       setProgress(`Generating payslip ${i + 1} of ${employees.length}...`);
