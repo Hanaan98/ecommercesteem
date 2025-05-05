@@ -151,16 +151,18 @@ const BulkPayslipUploader = () => {
       formData.append("payslip", blob, `Payslip-${name}.pdf`);
 
       try {
-      await fetch("http://localhost:5000/send-email", {
+      await fetch("https://ecombackend-production-36ff.up.railway.app/send-email", {
       method: "POST",
       body: formData,
+      
     });
+    zip.file(`Payslip_${name.replace(/\s+/g, "_")}.pdf`, blob);
+
+      setProgress(`Generating payslip ${i + 1} of ${employees.length}...`);
     } catch (err) {
     console.error("Failed to send email to", name);
   }
-      zip.file(`Payslip_${name.replace(/\s+/g, "_")}.pdf`, blob);
-
-      setProgress(`Generating payslip ${i + 1} of ${employees.length}...`);
+      
     }
 
     zip.generateAsync({ type: "blob" }).then((zipBlob) => {
