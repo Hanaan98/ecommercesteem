@@ -204,7 +204,7 @@ const MyDocument = ({
             </Text>
             <Text style={{ fontSize: 10, color: "#737373" }}>
               <Text style={{ fontWeight: "bold" }}>NTN:</Text>
-              <Text style={{ fontStyle: "italic" }}> In-Process</Text>
+              <Text style={{ fontStyle: "italic" }}> 9528336-0</Text>
             </Text>
             
               <Text style={{ fontStyle: "italic",fontSize: 10, color: "#737373" }}>info@ecommercesteem.com</Text>
